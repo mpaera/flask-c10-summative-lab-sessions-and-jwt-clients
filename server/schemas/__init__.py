@@ -1,0 +1,31 @@
+def registration_data(payload):
+	payload = payload or {}
+	username = payload.get("username")
+	password = payload.get("password")
+	confirmation = payload.get("password_confirmation")
+	if not username or not isinstance(username, str):
+		return None, "Username is required."
+	if not password or not isinstance(password, str):
+		return None, "Password is required."
+	if password != confirmation:
+		return None, "Passwords do not match."
+	return {
+		"username": username.strip(),
+		"email": payload.get("email") or f"{username.strip()}@local.invalid",
+		"password": password,
+	}, None
+
+
+def task_data(payload, partial=False):
+	payload = payload or {}
+	allowed = {"title", "description", "completed"}
+	data = {key: payload[key] for key in allowed if key in payload}
+	if not partial and not data.get("title"):
+		return None, "Title is required."
+	if "title" in data and (not isinstance(data["title"], str) or not data["title"].strip()):
+		return None, "Title must be a non-empty string."
+	if "completed" in data and not isinstance(data["completed"], bool):
+		return None, "Completed must be a boolean."
+	if "title" in data:
+		data["title"] = data["title"].strip()
+	return data, None

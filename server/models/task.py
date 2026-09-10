@@ -2,7 +2,7 @@ from server import db
 
 
 class Task(db.Model):
-    _tablename_ = "tasks"
+    __tablename__ = "tasks"
 
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
@@ -20,5 +20,14 @@ class Task(db.Model):
         back_populates="tasks"
     )
 
-    def _repr_(self):
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "title": self.title,
+            "description": self.description,
+            "completed": self.completed,
+            "user_id": self.user_id,
+        }
+
+    def __repr__(self):
         return f"<Task {self.title}>"
