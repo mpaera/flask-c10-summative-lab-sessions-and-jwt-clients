@@ -75,10 +75,12 @@ def me():
 def check_session():
 	user_id = session.get("user_id")
 	user = db.session.get(User, user_id) if user_id else None
-	return jsonify(user.to_dict() if user else {})
+	if not user:
+		return jsonify({"errors": ["Authentication required."]}), 401
+	return jsonify(user.to_dict())
 
 
 @auth_bp.delete("/logout")
 def logout():
 	session.pop("user_id", None)
-	return jsonify({})
+	return "", 204
