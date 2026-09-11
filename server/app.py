@@ -6,6 +6,8 @@ import os
 from server import bcrypt, db, ma
 from server.config import Config
 
+from server.routes.auth import auth_bp
+
 
 def create_app():
     app = Flask(__name__)
