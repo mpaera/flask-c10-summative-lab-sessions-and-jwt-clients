@@ -4,7 +4,7 @@ A secure Flask REST API backend for a personal task-tracking productivity app. U
 
 ## Project Description
 
-This API supports full user authentication (JWT-based, with session fallback) and complete CRUD functionality for a Task resource owned by each user. Every task-related endpoint is protected, ensuring users can only access their own tasks. The API also includes pagination on the tasks list endpoint.
+This API supports JWT authentication and complete CRUD functionality for a Task resource owned by each user. Every task-related endpoint is protected, ensuring users can only access their own tasks. The API also includes pagination on the tasks list endpoint.
 
 Core features:
 - User registration and login with hashed passwords (Flask-Bcrypt)
@@ -22,7 +22,7 @@ Core features:
 
 2. Create and activate a virtual environment:
    python -m venv venv
-   source venv/Scripts/activate
+   venv\\Scripts\\Activate.ps1
 
 3. Install dependencies:
    pip install -r requirements.txt
@@ -55,12 +55,11 @@ The API will be available at http://127.0.0.1:5000.
 | POST | /signup | Register a new user. Requires username, password, password_confirmation, optional email. Returns the user and a JWT token. |
 | POST | /login | Log in with username and password. Returns the user and a JWT token. |
 | GET | /me | Get the currently authenticated user (requires JWT bearer token). |
-| GET | /check_session | Check if a session-based user is logged in. |
-| DELETE | /logout | Log out the current session. |
+| DELETE | /logout | End the authenticated client session. The client should discard its JWT after receiving a successful response. |
 
 ### Tasks
 
-All task endpoints require authentication (JWT bearer token or an active session) and only return/affect the logged-in user's own tasks.
+All task endpoints require a JWT bearer token and only return/affect the logged-in user's own tasks.
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|

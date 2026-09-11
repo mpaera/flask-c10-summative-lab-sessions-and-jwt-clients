@@ -29,17 +29,12 @@ def test_signup_and_login_return_auth_data(client):
     assert response.get_json()["token"]
 
 
-def test_session_status_and_logout_use_auth_status_codes(client):
-    unauthenticated = client.get("/check_session")
-    assert unauthenticated.status_code == 401
+def test_jwt_logout_requires_a_token(client):
+    assert client.delete("/logout").status_code == 401
 
-    signup(client, "alice")
-    authenticated = client.get("/check_session")
-    assert authenticated.status_code == 200
-
-    logout = client.delete("/logout")
+    user = signup(client, "alice")
+    logout = client.delete("/logout", headers=jwt_headers(user))
     assert logout.status_code == 204
-    assert client.get("/check_session").status_code == 401
 
 
 def test_unauthorized_users_cannot_access_tasks(client):
@@ -91,3 +86,34 @@ def test_task_crud_and_validation(client):
 
     deleted = client.delete(f"/tasks/{task_id}", headers=headers)
     assert deleted.status_code == 204
+
+
+def test_task_pagination_and_mutation_ownership(client):
+    alice = signup(client, "alice")
+    alice_headers = jwt_headers(alice)
+    task_ids = []
+    for index in range(3):
+        response = client.post(
+            "/tasks",
+            json={"title": f"Task {index}"},
+            headers=alice_headers,
+        )
+        task_ids.append(response.get_json()["id"])
+
+    first_page = client.get(
+        "/tasks?page=1&per_page=2", headers=alice_headers
+    )
+    assert first_page.status_code == 200
+    assert len(first_page.get_json()["tasks"]) == 2
+    assert first_page.get_json()["has_next"] is True
+
+    bob = signup(client, "bob")
+    bob_headers = jwt_headers(bob)
+    assert client.patch(
+        f"/tasks/{task_ids[0]}",
+        json={"title": "Not Alice's task"},
+        headers=bob_headers,
+    ).status_code == 404
+    assert client.delete(
+        f"/tasks/{task_ids[0]}", headers=bob_headers
+    ).status_code == 404

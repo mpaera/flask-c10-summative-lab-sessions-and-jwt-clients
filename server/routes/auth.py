@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, request, session
+from flask import Blueprint, jsonify, request
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 from sqlalchemy import or_
 
@@ -48,7 +48,6 @@ def signup():
 	db.session.add(user)
 	db.session.commit()
 	token = create_access_token(identity=str(user.id))
-	session["user_id"] = user.id
 	return jsonify(user_response(user, token)), 201
 
 
@@ -58,7 +57,6 @@ def login():
 	if error:
 		return error
 	token = create_access_token(identity=str(user.id))
-	session["user_id"] = user.id
 	return jsonify(user_response(user, token))
 
 
@@ -71,16 +69,7 @@ def me():
 	return jsonify(user.to_dict())
 
 
-@auth_bp.get("/check_session")
-def check_session():
-	user_id = session.get("user_id")
-	user = db.session.get(User, user_id) if user_id else None
-	if not user:
-		return jsonify({"errors": ["Authentication required."]}), 401
-	return jsonify(user.to_dict())
-
-
 @auth_bp.delete("/logout")
+@jwt_required()
 def logout():
-	session.pop("user_id", None)
 	return "", 204

@@ -17,7 +17,19 @@ def create_app():
     bcrypt.init_app(app)
     ma.init_app(app)
     Migrate(app, db)
-    JWTManager(app)
+    jwt = JWTManager(app)
+
+    @jwt.unauthorized_loader
+    def missing_token(message):
+        return {"errors": ["Authentication required."]}, 401
+
+    @jwt.invalid_token_loader
+    def invalid_token(message):
+        return {"errors": ["Invalid or expired token."]}, 401
+
+    @jwt.expired_token_loader
+    def expired_token(jwt_header, jwt_payload):
+        return {"errors": ["Invalid or expired token."]}, 401
 
     from server.routes.auth import auth_bp
     from server.routes.tasks import tasks_bp
