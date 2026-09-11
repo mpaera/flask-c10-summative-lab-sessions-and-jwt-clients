@@ -5,6 +5,8 @@ from flask_jwt_extended import JWTManager
 from server import db
 from server.config import Config
 
+from server.routes.auth import auth_bp
+
 
 def create_app():
     app = Flask(__name__)
@@ -13,6 +15,8 @@ def create_app():
     db.init_app(app)
     Migrate(app, db)
     JWTManager(app)
+
+    app.register_blueprint(auth_bp)
 
     return app
 
