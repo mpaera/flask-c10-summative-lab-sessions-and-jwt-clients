@@ -3,7 +3,7 @@ from flask_migrate import Migrate
 from flask_jwt_extended import JWTManager
 import os
 
-from server import bcrypt, db
+from server import bcrypt, db, ma
 from server.config import Config
 
 
@@ -15,6 +15,7 @@ def create_app():
 
     db.init_app(app)
     bcrypt.init_app(app)
+    ma.init_app(app)
     Migrate(app, db)
     JWTManager(app)
 
