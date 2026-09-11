@@ -12,7 +12,8 @@ class Config:
         "sqlite:///" + os.path.join(BASE_DIR, "instance", "app.db")
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SECRET_KEY = os.getenv("SECRET_KEY", "session-secret-key-change-this")
     JWT_SECRET_KEY = os.getenv(
         "JWT_SECRET_KEY",
-        "super-secret-key-change-this"
+        "super-secret-key-change-this-32-chars"
     )

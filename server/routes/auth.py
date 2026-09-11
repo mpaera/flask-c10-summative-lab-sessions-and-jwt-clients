@@ -1,55 +1,75 @@
-from flask import Blueprint, request, jsonify
-from flask_jwt_extended import create_access_token
+from flask import Blueprint, jsonify, request
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
+from sqlalchemy import or_
 
 from server import db
 from server.models.user import User
+from server.schemas import registration_data
 
-auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
+
+auth_bp = Blueprint("auth", __name__)
 
 
-@auth_bp.post("/register")
-def register():
-    data = request.get_json() or {}
+def user_response(user, token=None):
+	data = user.to_dict()
+	if token:
+		data["token"] = token
+		data["user"] = user.to_dict()
+	return data
 
-    username = data.get("username")
-    password = data.get("password")
 
-    if not username or not password:
-        return jsonify({"error": "Username and password are required"}), 400
+def validation_error(message, status=422):
+	return jsonify({"errors": [message]}), status
 
-    if User.query.filter_by(username=username).first():
-        return jsonify({"error": "Username already exists"}), 409
 
-    user = User(username=username)
-    user.password = password
+def authenticate_user():
+	username = request.json.get("username") if request.is_json else None
+	password = request.json.get("password") if request.is_json else None
+	if not username or not password:
+		return None, validation_error("Username and password are required.")
 
-    db.session.add(user)
-    db.session.commit()
+	user = User.query.filter_by(username=username).first()
+	if not user or not user.check_password(password):
+		return None, validation_error("Invalid username or password.", 401)
+	return user, None
 
-    return jsonify({
-        "id": user.id,
-        "username": user.username
-    }), 201
+
+@auth_bp.post("/signup")
+def signup():
+	payload, error = registration_data(request.get_json(silent=True))
+	if error:
+		return validation_error(error)
+	username = payload["username"]
+	if User.query.filter(or_(User.username == username, User.email == payload["email"])).first():
+		return validation_error("Username or email is already taken.", 409)
+
+	user = User(username=username, email=payload["email"])
+	user.set_password(payload["password"])
+	db.session.add(user)
+	db.session.commit()
+	token = create_access_token(identity=str(user.id))
+	return jsonify(user_response(user, token)), 201
 
 
 @auth_bp.post("/login")
 def login():
-    data = request.get_json() or {}
+	user, error = authenticate_user()
+	if error:
+		return error
+	token = create_access_token(identity=str(user.id))
+	return jsonify(user_response(user, token))
 
-    username = data.get("username")
-    password = data.get("password")
 
-    user = User.query.filter_by(username=username).first()
+@auth_bp.get("/me")
+@jwt_required()
+def me():
+	user = db.session.get(User, int(get_jwt_identity()))
+	if not user:
+		return validation_error("User not found.", 404)
+	return jsonify(user.to_dict())
 
-    if not user or not user.check_password(password):
-        return jsonify({"error": "Invalid username or password"}), 401
 
-    access_token = create_access_token(identity=str(user.id))
-
-    return jsonify({
-        "access_token": access_token,
-        "user": {
-            "id": user.id,
-            "username": user.username
-        }
-    }), 200
+@auth_bp.delete("/logout")
+@jwt_required()
+def logout():
+	return "", 204

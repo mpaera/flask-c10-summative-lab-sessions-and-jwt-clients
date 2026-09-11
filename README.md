@@ -1,159 +1,102 @@
-Flask C10 Summative Lab — Sessions and JWT Clients
+# Task Tracker API
 
-Project Overview
+A secure Flask REST API backend for a personal task-tracking productivity app. Users can register, log in, and manage their own private tasks — with authentication ensuring nobody can view or modify another user's data.
 
-This project demonstrates authentication and authorization using a Flask backend with two separate client applications.
+## Project Description
 
-The project includes:
+This API supports JWT authentication and complete CRUD functionality for a Task resource owned by each user. Every task-related endpoint is protected, ensuring users can only access their own tasks. The API also includes pagination on the tasks list endpoint.
 
-- A Flask API server
-- Session-based authentication client
-- JWT-based authentication client
-- Flask-SQLAlchemy database integration
-- Flask-Migrate database migrations
-- Protected API routes
-- User authentication and authorization
+Core features:
+- User registration and login with hashed passwords (Flask-Bcrypt)
+- JWT authentication for protected routes
+- Full CRUD for tasks (Create, Read, Update, Delete)
+- Ownership checks - users cannot access another user's tasks
+- Paginated task listing
+- Marshmallow schemas for serialization/validation
 
-Project Structure
+## Installation
 
-flask-c10-summative-lab-sessions-and-jwt-clients/
-│
-├── client-with-jwt/          # Client application using JWT authentication
-├── client-with-sessions/     # Client application using session authentication
-├── migrations/               # Flask-Migrate database migrations
-├── server/                   # Flask backend API
-│   ├── __init__.py
-│   ├── app.py
-│   ├── config.py
-│   └── seed.py
-│
-├── .env                      # Environment variables
-├── .gitignore
-├── requirements.txt          # Python dependencies
-└── README.md
+1. Clone the repository:
+   git clone https://github.com/mpaera/flask-c10-summative-lab-sessions-and-jwt-clients.git
+   cd flask-c10-summative-lab-sessions-and-jwt-clients
 
-Technologies Used
+2. Create and activate a virtual environment:
+   python -m venv venv
+   venv\\Scripts\\Activate.ps1
 
-Backend
+3. Install dependencies:
+   pip install -r requirements.txt
 
-- Python
+4. Set up environment variables (optional, defaults exist for local dev). Create a .env file:
+   SECRET_KEY=your-secret-key
+   JWT_SECRET_KEY=your-jwt-secret-key
+   DATABASE_URL=sqlite:///instance/app.db
+
+5. Run database migrations:
+   flask --app server.app db upgrade
+
+6. Seed the database with demo data:
+   python -m server.seed
+   This creates a demo user (demo / demo123) with a sample task.
+
+## Running the Application
+
+Start the Flask development server:
+   flask --app server.app run
+
+The API will be available at http://127.0.0.1:5000.
+
+## API Endpoints
+
+### Authentication
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | /signup | Register a new user. Requires username, password, password_confirmation, optional email. Returns the user and a JWT token. |
+| POST | /login | Log in with username and password. Returns the user and a JWT token. |
+| GET | /me | Get the currently authenticated user (requires JWT bearer token). |
+| DELETE | /logout | End the authenticated client session. The client should discard its JWT after receiving a successful response. |
+
+### Tasks
+
+All task endpoints require a JWT bearer token and only return/affect the logged-in user's own tasks.
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | /tasks?page=1&per_page=10 | Get a paginated list of the logged-in user's tasks. |
+| POST | /tasks | Create a new task. Requires title; optional description, completed. |
+| GET | /tasks/<id> | Get a single task by ID (must belong to the logged-in user). |
+| PATCH | /tasks/<id> | Update a task (partial updates supported). |
+| DELETE | /tasks/<id> | Delete a task. |
+
+Pagination response shape (GET /tasks):
+
+{
+  "tasks": [...],
+  "page": 1,
+  "per_page": 10,
+  "pages": 3,
+  "total": 25,
+  "has_next": true,
+  "has_prev": false
+}
+
+## Tech Stack
+
 - Flask
 - Flask-SQLAlchemy
 - Flask-Migrate
-- SQLAlchemy
-- JWT authentication
-- Session authentication
+- Flask-JWT-Extended
+- Flask-Bcrypt
+- Marshmallow / Flask-Marshmallow / Marshmallow-SQLAlchemy
 
-Clients
+## Project Structure
 
-- JavaScript
-- Node.js
-- npm
-- React/client-side authentication
-
-Installation
-
-Clone the repository and enter the project directory:
-
-git clone <repository-url>
-cd flask-c10-summative-lab-sessions-and-jwt-clients
-
-Create and activate a virtual environment:
-
-python3 -m venv venv
-source venv/bin/activate
-
-Install the Python dependencies:
-
-pip install -r requirements.txt
-
-Environment Variables
-
-Create a ".env" file in the project root and configure the required environment variables for the Flask application.
-
-Do not commit passwords, secret keys, tokens, or other sensitive information to GitHub.
-
-Running the Flask Server
-
-From the project root, activate the virtual environment:
-
-source venv/bin/activate
-
-Then start the Flask application using the configuration required by the project.
-
-The backend API will then be available locally.
-
-Database
-
-The project uses SQLAlchemy and Flask-Migrate for database management.
-
-To initialize or update the database, use the Flask-Migrate commands configured for the project.
-
-For example:
-
-flask db upgrade
-
-The seed script can be used to populate the database with sample data:
-
-python server/seed.py
-
-Client Applications
-
-JWT Client
-
-The "client-with-jwt" directory contains the client application that communicates with the Flask API using JSON Web Tokens for authentication.
-
-Navigate into the directory and install its dependencies:
-
-cd client-with-jwt
-npm install
-
-Start the client using the appropriate npm command defined in "package.json".
-
-Sessions Client
-
-The "client-with-sessions" directory contains the client application that uses Flask session-based authentication.
-
-Navigate into the directory and install its dependencies:
-
-cd client-with-sessions
-npm install
-
-Start the client using the appropriate npm command defined in "package.json".
-
-Authentication
-
-This project demonstrates two authentication approaches:
-
-Session Authentication
-
-The server maintains authentication state using sessions. After successful login, the client can make authenticated requests while the session remains valid.
-
-JWT Authentication
-
-The server issues a JSON Web Token after successful authentication. The client uses the token when making requests to protected API endpoints.
-
-Testing
-
-Run the project's tests using:
-
-pytest
-
-Make sure the virtual environment is activated and all dependencies are installed before running the tests.
-
-Git Collaboration
-
-This project was developed collaboratively using Git branches.
-
-Each team member worked on their assigned features using their own branch. Completed work was merged into the main branch before submission.
-
-The "main" branch contains the combined project implementation.
-
-Contributors
-
-- Terry Mpaera
-- Project team members
-
-License
-
-This project was created as part of a Moringa School software development course assignment.
+server/
+- app.py           Flask app factory, extension setup, blueprint registration
+- config.py        App configuration (DB URI, secret keys)
+- seed.py          Demo data seeding script
+- models/          SQLAlchemy models (User, Task)
+- routes/          Blueprints (auth, tasks)
+- schemas/         Marshmallow schemas and validation helpers
+migrations/        Database migration history
